@@ -1,0 +1,236 @@
+In [ ]:
+#Step 1 Create Training Data
+import numpy as np
+import cv2
+
+# load haarcascade face classifier
+face_classifier = cv2.CascadeClassifier( "haarcascade_frontalface_default.xml" )
+ 
+# Load functions
+def face_extractor(img):
+    # Function detects faces and returns the cropped face
+    # If no face detected, it returns the input image
+    
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    faces = face_classifier.detectMultiScale(gray, 1.3, 5)
+    
+    if faces is () :
+        return None
+    
+    # Crop all faces found
+    for (x,y,w,h) in faces:
+        cropped_face = img[y:y+h, x:x+w]
+        
+    return cropped_face
+
+
+
+
+# Collect 100 samples of your face from webcam input
+def collect_samples(path, count):
+    # Initialize Webcam
+    cap = cv2.VideoCapture(1)
+    while True:
+        ret, frame = cap.read()
+        if face_extractor(frame) is not None:
+            count += 1
+            face = cv2.resize(face_extractor(frame), (200, 200))
+            face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+        
+            # Save file in specified directory with unique name
+            file_name_path = path + str(count) + '.jpg'
+            cv2.imwrite(file_name_path, face)
+        
+            # Put count on images and display live count
+            cv2.putText(face, str(count), (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0,255,0), 2)
+            cv2.imshow('Face Cropper', face)
+        
+        else:
+            print("Face not found")
+            pass
+        if cv2.waitKey(1) == 13 or count == 100: #13 is the Enter Key
+            break
+        
+    cap.release()
+    cv2.destroyAllWindows()      
+    print("Collecting Samples Complete")
+
+
+i=0 
+j=0
+
+print("Collecting your samples")
+collect_samples("./faces/Ravi/", i)
+
+print("Collecting your friend samples")
+collect_samples("./faces/friend/", j)
+In [ ]:
+#Step 2 Train Model
+from sys import path
+import cv2
+import numpy as np
+from os import listdir
+from os.path  import isfile, join
+# Get training data we previously made
+def trainModel(path):
+    
+    data_path = path
+    onlyfiles = [f for f in listdir(data_path) if isfile(join(data_path, f))]
+    # Create arrays from training data and labels
+    Training_Data, Labels = [], []
+
+    # Open training images in our datapath
+    # Create a numpy array for training data
+    for i, files in enumerate(onlyfiles):
+        image_path = data_path + onlyfiles[i]
+        images = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        Training_Data.append(np.asarray(images, dtype=np.uint8))
+        Labels.append(i)
+    
+    # Create a numpy array for both training data and labels
+    Labels = np.asarray(Labels, dtype=np.int32)
+
+    # Initialize facial recognizer
+    # model = cv2.face.createLBPHFaceRecognizer()
+    # NOTE: For OpenCV 3.0 use cv2.face.createLBPHFaceRecognizer()
+    # pip install opencv-contrib-python
+    # model = cv2.createLBPHFaceRecognizer()
+    
+    model = cv2.face_LBPHFaceRecognizer.create()
+    # Let's train our model 
+    model.train(np.asarray(Training_Data), np.asarray(Labels))
+    return model
+  
+
+
+krishna_model = trainModel("./faces/Ravi/")
+print("Your model trained successfully")
+friend_model = trainModel("./faces/friend/")
+print("Your friend's model trained successfully")
+In [ ]:
+# STEP 3  RUN FACIAL RECOGNITION
+import cv2
+import numpy as np
+import os
+import pywhatkit
+import datetime 
+
+def confidence(results, image):
+    if results[1] < 500 :
+        confidence = int( 100 * (1 - (results[1])/400) )
+        display_string = str(confidence) + '% Confident it is User'
+        cv2.putText(image, display_string, (100, 120), cv2.FONT_HERSHEY_COMPLEX, 1, (255,120,150), 2)
+    return confidence
+
+face_classifier = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+
+def face_detector(img, size=0.5):
+    
+    # Convert image to grayscale
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    faces = face_classifier.detectMultiScale(gray, 1.3, 5)
+    if faces is () :
+        return img, []
+    
+    
+    for (x,y,w,h) in faces:
+        cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,255),2)
+        roi = img[y:y+h, x:x+w]
+        roi = cv2.resize(roi, (200, 200))
+    return img, roi
+
+# Open Webcam
+cap = cv2.VideoCapture(1)
+while True:
+    ret, frame = cap.read()
+    image, face = face_detector(frame)
+    try:
+        face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+        # Pass face to prediction model
+        # "results" comprises of a tuple containing the label and the confidence value
+        Ravi_results =  Ravi_model.predict(face)
+        friend_results = friend_model.predict(face)
+        
+        conf_ Ravi= confidence( Ravi_results, image)
+        conf_friend = confidence(friend_results, image)
+
+        if conf_ Ravi > 85:
+            cv2.putText(image, "Hello  Ravi", (250, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (0,255,0), 2)
+            cv2.imshow('Face Recognition', image )
+            cv2.waitKey(3000)
+            cv2.destroyAllWindows()
+           
+            try: 
+                #send whatsapp message
+                import pywhatkit
+
+                print("Sending Whatsapp Message....")
+                pywhatkit.sendwhatmsg("<friend whatsapp number>", "hello brother , This is python genrerated message!", 19, 37)
+                print("Whatsapp Message sent Sucessfully....")
+                
+                
+                #send email
+                # Python code to illustrate Sending mail from
+                # your Gmail account
+                import smtplib
+
+                # creates SMTP session
+                s = smtplib.SMTP('smtp.gmail.com', 587)
+
+                # start TLS for security
+                s.starttls()
+
+                # Authentication
+                s.login("<sender mail address>", "<sender mail password> ")
+
+                # message to be sent
+                message = "Hello brother how are you...???"
+
+                # sending the mail
+                s.sendmail("<sender mail address>", "<receiver mail address>", message)
+                print("sending mail.....")
+                print("mail sent...")
+                # terminating the session
+                s.quit()
+                break
+            except: 
+                print("mail didn't send")
+                break
+         
+        elif conf_friend > 90:
+            cv2.putText(image, "Hi...Friend", (250, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (0,255,0), 2)
+            cv2.imshow('Face Recognition', image )
+            cv2.waitKey(3000)
+            cv2.destroyAllWindows()
+            # If it is Friend create ec2 instance and attach ebs volume to it 
+            try:
+                os.system("aws ec2 run-instances --image-id ami-0ad704c126371a549 --instance-type t2.micro --count 1 --subnet-id subnet-3f7e9254 --security-group-ids sg-7dd7eb07 --key-name mumbai")
+                print("aws ec2 instance creating.....")
+                print("aws ec2 instance created....")
+                os.system("aws ec2 create-volume --volume-type gp2 --size 5 --region ap-south-1 --availability-zone ap-south-1a")
+                i = input("Enter VolumeID: ")
+                j = input("Enter InstanceID: ")
+                ebs_volume = "aws ec2 attach-volume --volume-id " + i + " --instance-id " + j + " --device /dev/sdf --region ap-south-1"
+                os.system(ebs_volume)
+                print("ebs volume attached")
+                break
+            except:
+                print("Error in aws instance creation..")
+                break
+
+        else:    
+            cv2.putText(image, "Recognizing Face...", (250, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (0,0,255), 2)
+            cv2.imshow('Face Recognition', image )
+        
+    except:
+        cv2.putText(image, "No Face Found!", (220, 120) , cv2.FONT_HERSHEY_COMPLEX, 1, (0,0,255), 2)
+        cv2.putText(image, "Looking For Face...", (220, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (0,0,255), 2)
+        cv2.imshow('Face Recognition', image )
+        pass
+        
+    if cv2.waitKey(1) == 13: #13 is the Enter Key
+        break
+        
+cap.release()
+cv2.destroyAllWindows()
+In [ ]:
