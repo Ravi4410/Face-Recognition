@@ -1,4 +1,3 @@
-In [ ]:
 #Step 1 Create Training Data
 import numpy as np
 import cv2
@@ -23,13 +22,10 @@ def face_extractor(img):
         
     return cropped_face
 
-
-
-
 # Collect 100 samples of your face from webcam input
 def collect_samples(path, count):
     # Initialize Webcam
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     while True:
         ret, frame = cap.read()
         if face_extractor(frame) is not None:
@@ -50,10 +46,11 @@ def collect_samples(path, count):
             pass
         if cv2.waitKey(1) == 13 or count == 100: #13 is the Enter Key
             break
-        
+            
+            
     cap.release()
     cv2.destroyAllWindows()      
-    print("Collecting Samples Complete")
+    print("Collecting Samples Complete")    
 
 
 i=0 
@@ -63,8 +60,8 @@ print("Collecting your samples")
 collect_samples("./faces/Ravi/", i)
 
 print("Collecting your friend samples")
-collect_samples("./faces/friend/", j)
-In [ ]:
+collect_samples("./faces/Friend/", j)
+
 #Step 2 Train Model
 from sys import path
 import cv2
@@ -100,14 +97,12 @@ def trainModel(path):
     # Let's train our model 
     model.train(np.asarray(Training_Data), np.asarray(Labels))
     return model
-  
 
-
-krishna_model = trainModel("./faces/Ravi/")
-print("Your model trained successfully")
-friend_model = trainModel("./faces/friend/")
+My_model = trainModel("./faces/Ravi/")
+print("model trained successfully")
+friend_model = trainModel("./faces/Friend/")
 print("Your friend's model trained successfully")
-In [ ]:
+
 # STEP 3  RUN FACIAL RECOGNITION
 import cv2
 import numpy as np
@@ -138,7 +133,6 @@ def face_detector(img, size=0.5):
         roi = img[y:y+h, x:x+w]
         roi = cv2.resize(roi, (200, 200))
     return img, roi
-
 # Open Webcam
 cap = cv2.VideoCapture(1)
 while True:
@@ -148,14 +142,14 @@ while True:
         face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
         # Pass face to prediction model
         # "results" comprises of a tuple containing the label and the confidence value
-        Ravi_results =  Ravi_model.predict(face)
-        friend_results = friend_model.predict(face)
+        Ravi_results = Ravi_model.predict(face)
+        Friend_results = Friend_model.predict(face)
         
-        conf_ Ravi= confidence( Ravi_results, image)
-        conf_friend = confidence(friend_results, image)
+        conf_Ravi= confidence(Ravi_results, image)
+        conf_Friend = confidence(Friend_results, image)
 
-        if conf_ Ravi > 85:
-            cv2.putText(image, "Hello  Ravi", (250, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (0,255,0), 2)
+        if conf_Ravi > 85:
+            cv2.putText(image, "Hello Mate ", (250, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (0,255,0), 2)
             cv2.imshow('Face Recognition', image )
             cv2.waitKey(3000)
             cv2.destroyAllWindows()
@@ -163,9 +157,9 @@ while True:
             try: 
                 #send whatsapp message
                 import pywhatkit
-
+                
                 print("Sending Whatsapp Message....")
-                pywhatkit.sendwhatmsg("<friend whatsapp number>", "hello brother , This is python genrerated message!", 19, 37)
+                pywhatkit.sendwhatmsg("<6393187419>", "Mummy paani ki bottle bhar di hai !", 19, 37)
                 print("Whatsapp Message sent Sucessfully....")
                 
                 
@@ -176,23 +170,27 @@ while True:
 
                 # creates SMTP session
                 s = smtplib.SMTP('smtp.gmail.com', 587)
-
+                
+                Sender_email= "ravikumar85744@gmail.com"
+                Rec_email="brownbatman03@gmail.com"
+                
+                password = input(str(" Enter Yor Password"))
+                
+                # message to be sent
+                message = " hello brother "
                 # start TLS for security
                 s.starttls()
 
                 # Authentication
-                s.login("<sender mail address>", "<sender mail password> ")
-
-                # message to be sent
-                message = "Hello brother how are you...???"
-
+                s.login(Sender_email ,password)
                 # sending the mail
-                s.sendmail("<sender mail address>", "<receiver mail address>", message)
+                s.sendmail(Sender_email,Rec_email, message)
                 print("sending mail.....")
                 print("mail sent...")
                 # terminating the session
                 s.quit()
                 break
+                
             except: 
                 print("mail didn't send")
                 break
@@ -204,13 +202,13 @@ while True:
             cv2.destroyAllWindows()
             # If it is Friend create ec2 instance and attach ebs volume to it 
             try:
-                os.system("aws ec2 run-instances --image-id ami-0ad704c126371a549 --instance-type t2.micro --count 1 --subnet-id subnet-3f7e9254 --security-group-ids sg-7dd7eb07 --key-name mumbai")
+                os.system("aws ec2 run-instances --image-id ami-0277b52859bac6f4b --instance-type t2.micro --count 1 --subnet-id subnet-839b18e8 --security-group-ids sg-df49a696 --key-name Ohio")
                 print("aws ec2 instance creating.....")
                 print("aws ec2 instance created....")
-                os.system("aws ec2 create-volume --volume-type gp2 --size 5 --region ap-south-1 --availability-zone ap-south-1a")
+                os.system("aws ec2 create-volume --volume-type gp2 --size 5 --region us-east-2 --availability-zone us-east-2")
                 i = input("Enter VolumeID: ")
                 j = input("Enter InstanceID: ")
-                ebs_volume = "aws ec2 attach-volume --volume-id " + i + " --instance-id " + j + " --device /dev/sdf --region ap-south-1"
+                ebs_volume = "aws ec2 attach-volume --volume-id " + i + " --instance-id " + j + " --device /dev/xvda --region us-east-2"
                 os.system(ebs_volume)
                 print("ebs volume attached")
                 break
@@ -227,10 +225,9 @@ while True:
         cv2.putText(image, "Looking For Face...", (220, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (0,0,255), 2)
         cv2.imshow('Face Recognition', image )
         pass
-        
+
     if cv2.waitKey(1) == 13: #13 is the Enter Key
         break
         
 cap.release()
 cv2.destroyAllWindows()
-In [ ]:
